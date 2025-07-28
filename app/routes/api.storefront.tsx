@@ -1,13 +1,18 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-// import { cors } from "remix-utils/cors"; // REMOVED
-import { addCorsHeaders, handleCorsPreflight } from "../utils/cors"; // ADDED
+import { cors } from "remix-utils/cors";
 import { ReservationService } from "../services/reservationService";
 
+// CORS headers for cross-origin requests from the storefront
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Shopify-Shop-Domain",
+};
+
 export async function loader({ request }: LoaderFunctionArgs) {
-  // Handle preflight requests using the utility function
-  const preflightResponse = handleCorsPreflight(request);
-  if (preflightResponse) {
-    return preflightResponse;
+  // Handle preflight requests
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   const url = new URL(request.url);
@@ -15,18 +20,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const shop = url.searchParams.get("shop");
 
   if (!cartId || !shop) {
-    // Add headers to the response directly
-    return addCorsHeaders(
-      json({ error: "Missing parameters" }, { 
-        status: 400
-      })
-    );
+    return json({ error: "Missing parameters" }, { 
+      status: 400, 
+      headers: corsHeaders 
+    });
   }
 
   try {
     const reservations = await ReservationService.getCartReservations(cartId, shop);
     
-    // Create the response object
     const response = json({
       success: true,
       reservations: reservations.map(r => ({
@@ -36,23 +38,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
       }))
     });
 
-    // Add CORS headers before returning the response
-    return addCorsHeaders(response);
+    return cors(request, response);
   } catch (error) {
     console.error("Error fetching storefront reservations:", error);
-    return addCorsHeaders(
-      json({ error: "Internal server error" }, { 
-        status: 500
-      })
-    );
+    return json({ error: "Internal server error" }, { 
+      status: 500, 
+      headers: corsHeaders 
+    });
   }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  // Handle preflight requests using the utility function
-  const preflightResponse = handleCorsPreflight(request);
-  if (preflightResponse) {
-    return preflightResponse;
+  // Handle preflight requests
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -60,22 +59,22 @@ export async function action({ request }: ActionFunctionArgs) {
     const { action, productId, cartId, shop } = body;
 
     if (!productId || !cartId || !shop) {
-      return addCorsHeaders(
-        json({ error: "Missing required parameters" }, { 
-          status: 400
-        })
-      );
+      return json({ error: "Missing required parameters" }, { 
+        status: 400, 
+        headers: corsHeaders 
+      });
     }
 
+    // For storefront API, we need a way to get admin access
+    // This is a simplified approach - in production, you'd want proper authentication
     const adminInstances = global.adminInstances as Map<string, any>;
     const admin = adminInstances?.get(shop);
 
     if (!admin) {
-      return addCorsHeaders(
-        json({ error: "Shop not authenticated" }, { 
-          status: 401
-        })
-      );
+      return json({ error: "Shop not authenticated" }, { 
+        status: 401, 
+        headers: corsHeaders 
+      });
     }
 
     let result;
@@ -108,11 +107,10 @@ export async function action({ request }: ActionFunctionArgs) {
         break;
 
       default:
-        return addCorsHeaders(
-          json({ error: "Invalid action" }, { 
-            status: 400
-          })
-        );
+        return json({ error: "Invalid action" }, { 
+          status: 400, 
+          headers: corsHeaders 
+        });
     }
 
     const response = result.success 
@@ -123,14 +121,13 @@ export async function action({ request }: ActionFunctionArgs) {
         })
       : json({ error: result.message }, { status: 400 });
 
-    return addCorsHeaders(response);
+    return cors(request, response);
 
   } catch (error) {
     console.error("Storefront API error:", error);
-    return addCorsHeaders(
-      json({ error: "Internal server error" }, { 
-        status: 500
-      })
-    );
+    return json({ error: "Internal server error" }, { 
+      status: 500, 
+      headers: corsHeaders 
+    });
   }
 }
