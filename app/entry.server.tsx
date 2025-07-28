@@ -7,6 +7,21 @@ import {
 } from "@remix-run/node";
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
+import { CleanupService } from "app/services/cleanupService";
+
+
+declare global {
+  var adminInstances: Map<string, any>;
+}
+
+if (!global.adminInstances) {
+  global.adminInstances = new Map();
+}
+
+// Start cleanup service
+if (!CleanupService.isRunningService()) {
+  CleanupService.start(global.adminInstances);
+}
 
 export const streamTimeout = 5000;
 

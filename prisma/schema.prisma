@@ -30,3 +30,13 @@ model Session {
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
 }
+
+export interface Reservation {
+  id: string;
+  productId: string;
+  cartId: string;
+  shopDomain: string;
+  reservedAt: Date;
+  expiresAt: Date;
+  isActive: boolean;
+}
