@@ -75,14 +75,14 @@ export async function updateProductMetafields(
   metafields: { namespace: string; key: string; value: string; type: string }[]
 ) {
   const metafieldsInput = metafields.map(metafield => ({
-    ownerId: productId,
+    id: productId,
     namespace: metafield.namespace,
     key: metafield.key,
     value: metafield.value,
     type: metafield.type,
   }));
 
-  const response = await admin.graphql(CREATE_METAFIELD, {
+  const response = await admin.graphql(UPDATE_PRODUCT_METAFIELDS, {
     variables: {
       metafields: metafieldsInput,
     },
