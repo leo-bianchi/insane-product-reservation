@@ -24,7 +24,7 @@ api_version = "2025-07"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,read_products,write_customers,read_customers,write_orders,read_orders"
+scopes = "write_products,read_products,write_customers,read_customers,write_orders,read_orders,unauthenticated_read_product_listings,unauthenticated_read_product_tags,unauthenticated_read_checkouts"
 
 [auth]
 redirect_urls = [ "https://insane-product-reservation.onrender.com/api/auth" ]
